@@ -79,7 +79,7 @@ At each step, the agent receives a structured observation containing:
 - All known item and goal positions (the agent has full map knowledge)
 - Steps taken and goals completed so far
 
-The observation is converted to natural language before being passed to the LLM — this gives Claude the richest possible context without the overhead of parsing raw JSON mid-reasoning.
+The observation is converted to natural language before being passed to the LLM, this gives Claude the richest possible context without the overhead of parsing raw JSON mid-reasoning.
 
 ### Action Space
 
@@ -95,10 +95,10 @@ Actions are validated before application. Invalid moves (into walls, out-of-boun
 ### Agent Harness
 
 The `LLMAgent` class in `agent/llm_agent.py` manages:
-1. **System prompt** — given once, establishes goal, action space, and response format
-2. **Rolling message history** — last 8 user/assistant pairs are kept so Claude reasons over recent steps without hitting context limits
-3. **Observation rendering** — `_obs_to_text()` converts structured state to clear natural language + ASCII grid
-4. **Action parsing** — extracts `ACTION: <action>` from Claude's response; falls back to keyword scan if needed
+1. **System prompt** - given once, establishes goal, action space, and response format
+2. **Rolling message history** - last 8 user/assistant pairs are kept so Claude reasons over recent steps without hitting context limits
+3. **Observation rendering** - `_obs_to_text()` converts structured state to clear natural language + ASCII grid
+4. **Action parsing** - extracts `ACTION: <action>` from Claude's response; falls back to keyword scan if needed
 
 ### Why this design?
 
@@ -107,7 +107,7 @@ The `LLMAgent` class in `agent/llm_agent.py` manages:
 - What's reachable nearby (surroundings)
 - Where the targets are (full map knowledge, no fog-of-war)
 
-I chose to give the agent full positional knowledge of items and goals. This removes the need for exploration behaviour and lets us focus on demonstrating clean goal-directed planning — which is the core of the challenge.
+I chose to give the agent full positional knowledge of items and goals. This removes the need for exploration behaviour and lets us focus on demonstrating clean goal-directed planning, which is the core of the challenge.
 
 The ASCII grid render is included alongside structured text so Claude can visually reason about spatial relationships. This dual representation (structured + visual) consistently outperforms either alone.
 
