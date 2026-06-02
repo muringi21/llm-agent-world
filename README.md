@@ -162,7 +162,7 @@ Full JSON logs (including all observations, actions, and results) are saved to `
 ```
 llm-agent-world/
 ├── agent/
-│   └── llm_agent.py      # LLM harness — prompting, history, action parsing
+│   └── llm_agent.py      # LLM harness - prompting, history, action parsing
 ├── world/
 │   ├── grid.py           # World state, rendering, observation builder
 │   └── actions.py        # Action space and state transition logic
@@ -189,7 +189,7 @@ llm-agent-world/
 
 ## Extending
 
-- Add **fog-of-war** — limit observation to a radius around the agent
-- Add **multi-agent** — two agents collaborating on the same world
+- Add **fog-of-war** - limit observation to a radius around the agent
+- Add **multi-agent** - two agents collaborating on the same world
 - Add **a FastAPI server** exposing the world as a REST API for external clients
-- Swap the LLM — the `LLMAgent` class is model-agnostic; replace the `anthropic` call with any provider
+- Swap the LLM - the `LLMAgent` class is model-agnostic; replace the `anthropic` call with any provider
