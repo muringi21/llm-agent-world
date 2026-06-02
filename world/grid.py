@@ -1,5 +1,5 @@
 """
-grid.py:2D grid world environment for the LLM agent.
+grid.py: 2D grid world environment for the LLM agent.
 
 The world is a W x H tile grid. Each cell can contain:
   - Empty space

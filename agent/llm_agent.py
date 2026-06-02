@@ -1,5 +1,5 @@
 """
-llm_agent.py — Claude-backed LLM agent harness.
+llm_agent.py: Claude-backed LLM agent harness.
 
 The agent harness is responsible for:
   1. Translating world observations into a rich prompt
