@@ -260,9 +260,6 @@ Full JSON logs (including all observations, actions, and results) are saved to `
 ---
 
 ## Project Structure
-
-
-## Project Structure
 ```
 llm-agent-world/
 ├── agent/
@@ -272,7 +269,7 @@ llm-agent-world/
 │   ├── grid.py           # World state, rendering, observation builder
 │   └── actions.py        # Action space and state transition logic
 ├── tests/
-│   └── test_agent.py     # 34 unit tests (no API key required)
+│   └── test_agent.py     # 41 unit tests (no API key required)
 ├── assets/
 │   └── test_results.png  # Test suite output
 ├── logs/                 # Run logs (JSON)
