@@ -12,6 +12,7 @@ python run.py --fog --fog-radius 2    # partial observability
 ---
 
 ## Architecture
+```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         WORLD (grid.py)                         │
 │  W×H tile grid  ·  WorldState dataclass  ·  fog-of-war radius   │
