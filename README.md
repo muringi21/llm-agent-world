@@ -89,6 +89,7 @@ Steps taken: 9  |  Goals completed: 0/1
 This gives the LLM **exact symbolic facts** with zero ambiguity. Structured text is fast to generate, deterministic, and trivial to extend with new fields.
 
 ### 2. ASCII grid
+```
   0 1 2 3 4 5 6 7 8 9
 0 # # # # # # # # # #
 1 # . . # . . . * . #
@@ -100,7 +101,7 @@ This gives the LLM **exact symbolic facts** with zero ambiguity. Structured text
 7 # . . . . . . . . #
 8 # G . . . . . . . #
 9 # # # # # # # # # #
-
+```
 This gives the LLM **spatial topology** in a format it has encountered extensively in pre-training. Claude can read this grid and immediately see wall clusters, corridors, and relative distances that would require multi-step inference from structured text alone.
 
 **Why both?** Structured text answers *what*. The ASCII grid answers *where*. The dual representation reduces wasted moves and wall-collision loops compared to either format alone.
@@ -114,7 +115,7 @@ This gives the LLM **spatial topology** in a format it has encountered extensive
 ### `delivery` (default)
 
 The agent must navigate an 8×8 grid, pick up a **KEY** (`K`), and deliver it to the **GOAL zone** (`G`). Interior walls create a simple maze that requires planning.
-
+```
   0 1 2 3 4 5 6 7
 0 # # # # # # # #
 1 # A . # . . G #
@@ -124,7 +125,7 @@ The agent must navigate an 8×8 grid, pick up a **KEY** (`K`), and deliver it to
 5 # . . # . K . #
 6 # . . . . . . #
 7 # # # # # # # #
-
+```
 ### `multi`
 
 The agent must collect both a **GEM** (`*`) and a **CRYSTAL** (`C`) from opposite sides of a 10×10 maze, then deliver both to the **GOAL zone** (`G`). Sequencing matters.
