@@ -1,7 +1,5 @@
 
 
-https://github.com/user-attachments/assets/306130d2-5196-45d8-8177-7a481de390b0
-
 ![CI](https://github.com/muringi21/llm-agent-world/actions/workflows/ci.yml/badge.svg)
 
 # LLM Agent in a Virtual World
@@ -127,6 +125,8 @@ This gives the LLM **spatial topology** in a format it has encountered extensive
 ## Scenarios
 
 ### `delivery` (default)
+
+https://github.com/user-attachments/assets/306130d2-5196-45d8-8177-7a481de390b0
 
 The agent must navigate an 8×8 grid, pick up a **KEY** (`K`), and deliver it to the **GOAL zone** (`G`). Interior walls create a simple maze that requires planning.
 
