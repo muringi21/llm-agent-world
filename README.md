@@ -1,5 +1,7 @@
 
 
+
+
 ![CI](https://github.com/muringi21/llm-agent-world/actions/workflows/ci.yml/badge.svg)
 
 # LLM Agent in a Virtual World
@@ -144,9 +146,13 @@ The agent must navigate an 8×8 grid, pick up a **KEY** (`K`), and deliver it to
 
 ### `multi`
 
+https://github.com/user-attachments/assets/218292e5-b7c4-4d76-b69f-ecf6f0dad71a
+
 The agent must collect both a **GEM** (`*`) and a **CRYSTAL** (`C`) from opposite sides of a 10×10 maze, then deliver both to the **GOAL zone** (`G`). Sequencing matters — the agent must decide which item to retrieve first and plan a route that doesn't force unnecessary backtracking.
 
 ### `maze`
+
+https://github.com/user-attachments/assets/7e7c7862-b4bb-46d2-9de7-377d9ccfdcf1
 
 A 12×10 corridor map with horizontal dividers and deliberate dead-ends. No item to pick up — the only task is to reach the **BEACON** (`G`) in the bottom-right corner. This scenario isolates spatial reasoning and exploration from inventory management.
 
