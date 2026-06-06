@@ -12,7 +12,7 @@ Each action returns (new_state, result_message).
 
 from __future__ import annotations
 from typing import Tuple
-from world.grid import WorldState, DIRECTIONS
+from world.grid import WorldState, Item, DIRECTIONS
 import copy
 
 
@@ -110,7 +110,6 @@ def _drop(state: WorldState, item_name: str) -> ActionResult:
         return state, msg
 
     # Just drop on the floor
-    from world.grid import Item
     state.agent_inventory.remove(item_name)
     state.items[pos] = Item(name=item_name, symbol=item_name[0].upper())
     msg = f"Dropped {item_name} at ({pos[0]}, {pos[1]})."

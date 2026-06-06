@@ -21,6 +21,9 @@ TILE_EMPTY = "."
 TILE_WALL  = "#"
 TILE_AGENT = "A"
 TILE_GOAL  = "G"
+TILE_FOG   = "?"
+
+FOG_RADIUS = 4  # cells the agent can see around itself (Manhattan distance)
 
 DIRECTIONS = {
     "north": (0, -1),
@@ -50,6 +53,7 @@ class WorldState:
     history: list = field(default_factory=list)       # list of (action, result) tuples
 
     def clone(self) -> "WorldState":
+        """Return a deep copy of this state (safe for logging/replay without mutation)."""
         s = copy.deepcopy(self)
         return s
 
@@ -108,8 +112,29 @@ def build_world(scenario: str = "delivery") -> WorldState:
         raise ValueError(f"Unknown scenario: {scenario}")
 
 
-def render_grid(state: WorldState) -> str:
-    """Return an ASCII string of the current world."""
+def get_visible_cells(state: WorldState, radius: int) -> set:
+    """
+    Return the set of (col, row) tuples within Manhattan distance `radius`
+    of the agent. Simple radius check - no raycast needed.
+    Cells are included regardless of walls (wall cells themselves are visible).
+    """
+    ac, ar = state.agent_pos
+    visible = set()
+    for dc in range(-radius, radius + 1):
+        for dr in range(-radius, radius + 1):
+            if abs(dc) + abs(dr) <= radius:
+                nc, nr = ac + dc, ar + dr
+                if 0 <= nc < state.width and 0 <= nr < state.height:
+                    visible.add((nc, nr))
+    return visible
+
+
+def render_grid(state: WorldState, visible_cells: set = None) -> str:
+    """Return an ASCII string of the current world.
+
+    When visible_cells is provided, cells outside the set render as '?'
+    (fog of war) - except the agent's own position is always visible.
+    """
     grid = [[TILE_EMPTY] * state.width for _ in range(state.height)]
 
     for (c, r) in state.walls:
@@ -125,16 +150,33 @@ def render_grid(state: WorldState) -> str:
     ac, ar = state.agent_pos
     grid[ar][ac] = TILE_AGENT
 
+    # Apply fog of war if visible_cells provided
+    if visible_cells is not None:
+        for r in range(state.height):
+            for c in range(state.width):
+                if (c, r) not in visible_cells and (c, r) != (ac, ar):
+                    grid[r][c] = TILE_FOG
+
     lines = ["  " + " ".join(str(c) for c in range(state.width))]
     for r, row in enumerate(grid):
         lines.append(f"{r} " + " ".join(row))
     return "\n".join(lines)
 
 
-def get_observation(state: WorldState) -> dict:
+def get_observation(
+    state: WorldState,
+    fog_radius: int = None,
+    discovered: dict = None,
+) -> dict:
     """
     Build a structured observation dict describing everything
     the agent can perceive from its current position.
+
+    When fog_radius is set:
+      - known_items and known_goals are limited to visible cells.
+      - fog_of_war / visible_radius fields are added.
+      - discovered dict (mutable, caller-owned) is updated with newly seen
+        items/goals and included as 'discovered_items' in the result.
     """
     ac, ar = state.agent_pos
 
@@ -157,7 +199,65 @@ def get_observation(state: WorldState) -> dict:
     at_item = state.items.get((ac, ar))
     at_goal = state.goals.get((ac, ar))
 
-    # All known item positions (agent has "memory" in this world)
+    if fog_radius is not None:
+        # Compute visible cells and filter items/goals
+        visible = get_visible_cells(state, fog_radius)
+
+        known_items = {
+            item.name: {"col": c, "row": r, "symbol": item.symbol}
+            for (c, r), item in state.items.items()
+            if (c, r) in visible
+        }
+
+        known_goals = {
+            goal_name: {"col": c, "row": r}
+            for (c, r), goal_name in state.goals.items()
+            if (c, r) in visible
+        }
+
+        # Update the discovered tracking dict
+        if discovered is not None:
+            if "items" not in discovered:
+                discovered["items"] = {}
+            if "goals" not in discovered:
+                discovered["goals"] = {}
+            discovered["items"].update(known_items)
+            discovered["goals"].update(known_goals)
+
+        discovered_items = dict(discovered["items"]) if discovered is not None else {}
+
+        # Manhattan distance using only visible items
+        nearest_distance = None
+        if known_items:
+            nearest_distance = min(
+                abs(info["col"] - ac) + abs(info["row"] - ar)
+                for info in known_items.values()
+            )
+        elif state.items:
+            # Fall back to global distance so agent still has a hint
+            nearest_distance = min(
+                abs(ic - ac) + abs(ir - ar)
+                for (ic, ir) in state.items
+            )
+
+        result = {
+            "agent_position": {"col": ac, "row": ar},
+            "inventory": list(state.agent_inventory),
+            "surroundings": surroundings,
+            "at_item": at_item.name if at_item else None,
+            "at_goal": at_goal if at_goal else None,
+            "known_items": known_items,
+            "known_goals": known_goals,
+            "nearest_item_distance": nearest_distance,
+            "completed_goals": list(state.completed_goals),
+            "steps_taken": state.steps,
+            "fog_of_war": True,
+            "visible_radius": fog_radius,
+            "discovered_items": discovered_items,
+        }
+        return result
+
+    # --- No fog: original behaviour ---
     known_items = {
         item.name: {"col": c, "row": r, "symbol": item.symbol}
         for (c, r), item in state.items.items()
@@ -168,6 +268,14 @@ def get_observation(state: WorldState) -> dict:
         for (c, r), goal_name in state.goals.items()
     }
 
+    # Manhattan distance to the nearest remaining item (useful planning hint)
+    nearest_distance = None
+    if state.items:
+        nearest_distance = min(
+            abs(ic - ac) + abs(ir - ar)
+            for (ic, ir) in state.items
+        )
+
     return {
         "agent_position": {"col": ac, "row": ar},
         "inventory": list(state.agent_inventory),
@@ -176,6 +284,7 @@ def get_observation(state: WorldState) -> dict:
         "at_goal": at_goal if at_goal else None,
         "known_items": known_items,
         "known_goals": known_goals,
+        "nearest_item_distance": nearest_distance,
         "completed_goals": list(state.completed_goals),
         "steps_taken": state.steps,
     }

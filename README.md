@@ -150,7 +150,7 @@ ACTION: move_east
 ...
 --- Step 14 ---
 [Agent drops key at goal (6,1)]
-✓ GOAL ACHIEVED in 14 steps!
+✓ GOAL ACHIEVED in 12 steps!
 ```
 
 Full JSON logs (including all observations, actions, and results) are saved to `logs/run_log.json`.

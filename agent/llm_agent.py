@@ -14,24 +14,45 @@ Design notes:
     once at the start of the session.
   - A rolling message history is maintained so the LLM can reason over recent
     steps without hitting context limits (we keep last N turns).
-  - Reasoning is extracted from <think>...</think> tags if the model provides it.
+  - API errors (rate limits, overload) are retried with exponential backoff.
 """
 
 from __future__ import annotations
 import os
 import re
-import json
+import time
 import anthropic
-from world.grid import WorldState, get_observation, render_grid
+from world.grid import WorldState, get_observation, render_grid, get_visible_cells
 from world.actions import get_action_space_description
 
 
-HISTORY_WINDOW = 8   # keep last N (user+assistant) message pairs
-MAX_TOKENS = 512
+HISTORY_WINDOW = 8    # keep last N (user+assistant) message pairs
+MAX_TOKENS = 1024     # enough headroom for multi-step reasoning
+MAX_RETRIES = 3       # API retry attempts on transient errors
+RETRY_BASE_DELAY = 2  # seconds (doubles each retry)
+
+VALID_ACTION_PREFIXES = [
+    "move_north", "move_south", "move_east", "move_west",
+    "pick_up", "drop ", "wait",
+]
+
+# Number of recent actions to track for repeat-action detection
+RECENT_ACTIONS_WINDOW = 5
+REPEAT_THRESHOLD = 3   # warn after this many consecutive identical actions
 
 
-def _obs_to_text(obs: dict, grid_str: str) -> str:
-    """Convert structured observation dict to clear natural language."""
+def _obs_to_text(obs: dict, grid_str: str, repeat_warning: str = None) -> str:
+    """Convert structured observation dict to clear natural language.
+
+    Parameters
+    ----------
+    obs : dict
+        Structured observation returned by get_observation().
+    grid_str : str
+        ASCII grid string.
+    repeat_warning : str, optional
+        System warning injected when the agent is repeating the same action.
+    """
     pos = obs["agent_position"]
     inv = obs["inventory"] or ["nothing"]
     surroundings = obs["surroundings"]
@@ -45,25 +66,55 @@ def _obs_to_text(obs: dict, grid_str: str) -> str:
     for direction, content in surroundings.items():
         lines.append(f"  {direction}: {content}")
 
+    if obs.get("fog_of_war"):
+        lines.append(
+            f"\n[FOG OF WAR ACTIVE] Visibility radius: {obs['visible_radius']} cells "
+            "(Manhattan distance). Cells shown as '?' are unexplored — you have not "
+            "seen them yet."
+        )
+
     if obs["at_item"]:
         lines.append(f"\nYou are standing ON a {obs['at_item']} — you can pick it up.")
     if obs["at_goal"]:
         lines.append(f"\nYou are standing ON the goal zone — drop your item(s) here to score.")
 
     if obs["known_items"]:
-        lines.append("\nKnown item locations:")
+        label = "Visible item locations:" if obs.get("fog_of_war") else "Known item locations:"
+        lines.append(f"\n{label}")
         for name, info in obs["known_items"].items():
             lines.append(f"  {name}: col {info['col']}, row {info['row']}")
 
+    # Show previously discovered items not currently visible
+    if obs.get("fog_of_war") and obs.get("discovered_items"):
+        prev_only = {
+            k: v for k, v in obs["discovered_items"].items()
+            if k not in obs["known_items"]
+        }
+        if prev_only:
+            lines.append("\nPreviously discovered items (may have moved or been picked up):")
+            for name, info in prev_only.items():
+                lines.append(f"  {name}: col {info['col']}, row {info['row']} (last seen)")
+
     if obs["known_goals"]:
-        lines.append("\nGoal zone locations:")
+        label = "Visible goal zones:" if obs.get("fog_of_war") else "Goal zone locations:"
+        lines.append(f"\n{label}")
         for goal_name, info in obs["known_goals"].items():
             lines.append(f"  {goal_name}: col {info['col']}, row {info['row']}")
+
+    if obs["nearest_item_distance"] is not None:
+        lines.append(f"\nDistance to nearest item: {obs['nearest_item_distance']} steps (Manhattan)")
 
     if obs["completed_goals"]:
         lines.append(f"\nCompleted goals so far: {', '.join(obs['completed_goals'])}")
 
-    lines.append(f"\nWorld map (A=you, K=key, *=gem, C=crystal, G=goal, #=wall):\n{grid_str}")
+    fog_note = " (?=unexplored)" if obs.get("fog_of_war") else ""
+    lines.append(
+        f"\nWorld map (A=you, K=key, *=gem, C=crystal, G=goal, #=wall{fog_note}):\n{grid_str}"
+    )
+
+    if repeat_warning:
+        lines.append(repeat_warning)
+
     return "\n".join(lines)
 
 
@@ -90,7 +141,9 @@ Example: ACTION: move_east
 
 
 class LLMAgent:
-    def __init__(self, scenario_goal: str, verbose: bool = True):
+    FOG_MODE = False  # class-level default
+
+    def __init__(self, scenario_goal: str, verbose: bool = True, fog_radius: int = None):
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise EnvironmentError(
@@ -102,57 +155,123 @@ class LLMAgent:
         self.messages: list[dict] = []
         self.verbose = verbose
 
+        # Fog of war
+        self.fog_radius = fog_radius
+        self.discovered: dict = {"items": {}, "goals": {}}
+
+        # Repeat-action detection
+        self.recent_actions: list[str] = []
+
     def choose_action(self, state: WorldState) -> str:
         """
         Given the current world state, ask Claude to choose an action.
         Returns an action string (e.g. 'move_east', 'pick_up').
         """
-        obs = get_observation(state)
-        grid_str = render_grid(state)
-        obs_text = _obs_to_text(obs, grid_str)
+        # Build observation (with optional fog)
+        if self.fog_radius is not None:
+            obs = get_observation(state, fog_radius=self.fog_radius, discovered=self.discovered)
+            visible = get_visible_cells(state, self.fog_radius)
+            grid_str = render_grid(state, visible_cells=visible)
+        else:
+            obs = get_observation(state)
+            grid_str = render_grid(state)
+
+        # Build repeat-action warning if needed
+        repeat_warning = self._build_repeat_warning()
+
+        obs_text = _obs_to_text(obs, grid_str, repeat_warning=repeat_warning)
 
         self.messages.append({"role": "user", "content": obs_text})
 
         # Trim history to window
         trimmed = self.messages[-(HISTORY_WINDOW * 2):]
 
-        response = self.client.messages.create(
-            model="claude-opus-4-5",
-            max_tokens=MAX_TOKENS,
-            system=self.system_prompt,
-            messages=trimmed,
-        )
-
-        raw_text = response.content[0].text.strip()
+        raw_text = self._call_api_with_retry(trimmed)
         self.messages.append({"role": "assistant", "content": raw_text})
 
         if self.verbose:
             print(f"\n[Claude thinking]\n{raw_text}\n")
 
         action = _parse_action(raw_text)
+
+        # Track recent actions for repeat detection
+        self.recent_actions.append(action)
+        if len(self.recent_actions) > RECENT_ACTIONS_WINDOW:
+            self.recent_actions.pop(0)
+
         return action
+
+    def _build_repeat_warning(self) -> str | None:
+        """Return a warning string if the same action has been repeated >= REPEAT_THRESHOLD times."""
+        if len(self.recent_actions) < REPEAT_THRESHOLD:
+            return None
+        last = self.recent_actions[-1]
+        # Count how many trailing actions match the last one
+        count = 0
+        for a in reversed(self.recent_actions):
+            if a == last:
+                count += 1
+            else:
+                break
+        if count >= REPEAT_THRESHOLD:
+            return (
+                f"\n[SYSTEM WARNING] You have attempted '{last}' {count} times in a row "
+                "with no progress. Try a different approach."
+            )
+        return None
+
+    def _call_api_with_retry(self, messages: list[dict]) -> str:
+        """
+        Call the Anthropic API with exponential backoff retry on transient errors.
+        Raises on non-retryable errors (auth, invalid request).
+        """
+        delay = RETRY_BASE_DELAY
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                response = self.client.messages.create(
+                    model="claude-opus-4-5",
+                    max_tokens=MAX_TOKENS,
+                    system=self.system_prompt,
+                    messages=messages,
+                )
+                return response.content[0].text.strip()
+
+            except anthropic.RateLimitError as e:
+                if attempt == MAX_RETRIES:
+                    raise
+                print(f"[WARN] Rate limit hit (attempt {attempt}/{MAX_RETRIES}). "
+                      f"Retrying in {delay}s...")
+                time.sleep(delay)
+                delay *= 2
+
+            except anthropic.APIStatusError as e:
+                # Retry on 529 (overloaded) and 5xx server errors only
+                if e.status_code in (529, 500, 502, 503, 504) and attempt < MAX_RETRIES:
+                    print(f"[WARN] API error {e.status_code} (attempt {attempt}/{MAX_RETRIES}). "
+                          f"Retrying in {delay}s...")
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise
+
+        # Should not reach here
+        raise RuntimeError("API call failed after all retries.")
 
     def reset(self):
         self.messages = []
+        self.discovered = {"items": {}, "goals": {}}
+        self.recent_actions = []
 
 
 def _parse_action(text: str) -> str:
     """
     Extract the action from the LLM response.
-    Looks for 'ACTION: <action>' on the last line, falls back to scanning.
+    Takes the LAST 'ACTION: <action>' occurrence to avoid misparses
+    when Claude quotes the format in its reasoning.
+    Falls back to keyword scan on the last line, then 'wait'.
     """
-    # Look for ACTION: line (case-insensitive)
-    match = re.search(r"ACTION:\s*(.+)", text, re.IGNORECASE)
-    if match:
-        return match.group(1).strip().lower()
-
-    # Fallback: check if last non-empty line is a known action keyword
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
-    if lines:
-        last = lines[-1].lower()
-        known_starts = ["move_", "pick_up", "drop ", "wait"]
-        for k in known_starts:
-            if last.startswith(k):
-                return last
-
-    return "wait"  # safe fallback
+    # Find ALL ACTION: occurrences and take the last one
+    matches = re.findall(r"ACTION:\s*(.+)", text, re.IGNORECASE)
+    if matches:
+        action = matches[-1
+    
