@@ -2,7 +2,7 @@
 
 
 
-![CI](https://github.com/muringi21/llm-agent-world/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/muringi21/llm-agent-world/actions/workflows/ci.yml/badge.svg?branch=main)
 
 # LLM Agent in a Virtual World
 
