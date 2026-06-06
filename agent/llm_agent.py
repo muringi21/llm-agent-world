@@ -32,8 +32,7 @@ MAX_RETRIES = 3       # API retry attempts on transient errors
 RETRY_BASE_DELAY = 2  # seconds (doubles each retry)
 
 VALID_ACTION_PREFIXES = [
-    "move_north", "move_south", "move_east", "move_west",
-    "pick_up", "drop ", "wait",
+    "move_", "pick_up", "drop", "wait",
 ]
 
 # Number of recent actions to track for repeat-action detection
@@ -270,8 +269,18 @@ def _parse_action(text: str) -> str:
     when Claude quotes the format in its reasoning.
     Falls back to keyword scan on the last line, then 'wait'.
     """
-    # Find ALL ACTION: occurrences and take the last one
     matches = re.findall(r"ACTION:\s*(.+)", text, re.IGNORECASE)
     if matches:
-        action = matches[-1
-    
+        action = matches[-1].strip().lower()
+        if any(action.startswith(p) for p in VALID_ACTION_PREFIXES):
+            return action
+        print(f"[WARN] Parsed action '{action}' is not a known action. Falling back.")
+
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    if lines:
+        last = lines[-1].lower()
+        if any(last.startswith(p) for p in VALID_ACTION_PREFIXES):
+            return last
+
+    print("[WARN] Could not parse a valid action. Defaulting to wait.")
+    return "wait"
