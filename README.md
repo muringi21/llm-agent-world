@@ -1,6 +1,6 @@
 # LLM Agent in a Virtual World
 
-The agent doesn't just act — it *perceives*. A dual-representation observation layer (structured text + ASCII grid) gives the LLM simultaneous symbolic and spatial access to world state, letting it plan routes, avoid walls, and sequence multi-item deliveries without hand-holding. The harness is intentionally thin: bounded message history, a single structured output token, and clean world/agent separation keep the system auditable and extensible.
+The agent doesn't just act , it *perceives*. A dual-representation observation layer (structured text + ASCII grid) gives the LLM simultaneous symbolic and spatial access to world state, letting it plan routes, avoid walls, and sequence multi-item deliveries without hand-holding. The harness is intentionally thin: bounded message history, a single structured output token, and clean world/agent separation keep the system auditable and extensible.
 
 ```bash
 python run.py                         # delivery scenario (default)
@@ -46,9 +46,9 @@ python run.py --fog --fog-radius 2    # partial observability
 
 **Fog-of-war** masks tiles outside a configurable Manhattan-distance radius; a distance hint to the nearest item replaces full positional knowledge, forcing the LLM to explore rather than teleport to the answer.
 
-**BFS baseline** provides a deterministic lower bound on step count for any scenario — useful for scoring LLM efficiency without needing to run multiple API calls.
+**BFS baseline** provides a deterministic lower bound on step count for any scenario, useful for scoring LLM efficiency without needing to run multiple API calls.
 
-**Repeat-action detection** watches the last N actions in `WorldState.action_history`. If the agent is oscillating (A→B→A→B), a plain-English nudge is injected into the next observation: *"You have taken this action repeatedly without progress — consider a different approach."* No reward shaping, no hidden state; just honest feedback in the observation channel.
+**Repeat-action detection** watches the last N actions in `WorldState.action_history`. If the agent is oscillating (A→B→A→B), a plain-English nudge is injected into the next observation: *"You have taken this action repeatedly without progress; consider a different approach."* No reward shaping, no hidden state; just honest feedback in the observation channel.
 
 ---
 
@@ -56,9 +56,9 @@ python run.py --fog --fog-radius 2    # partial observability
 
 | Decision | What it does | Evaluation criterion |
 |---|---|---|
-| **Dual observation: structured text + ASCII grid** | Structured text gives the LLM exact symbolic facts (position, inventory, goal coords). The ASCII grid encodes topology — walls, corridors, relative distances — in a form Claude has seen millions of times in training. Together they consistently outperform either alone on spatial tasks. | Observation thoughtfulness |
+| **Dual observation: structured text + ASCII grid** | Structured text gives the LLM exact symbolic facts (position, inventory, goal coords). The ASCII grid encodes topology: walls, corridors, relative distances, in a form Claude has seen millions of times in training. Together they consistently outperform either alone on spatial tasks. | Observation thoughtfulness |
 | **Fog-of-war as a first-class feature** | Flipping `--fog` turns a planning problem into an exploration problem. The same harness, prompt, and parser handle both. | Harness design, creativity |
-| **BFS baseline agent** | Deterministic optimal pathing — a concrete benchmark, not a vibe check. | Harness design, simplicity |
+| **BFS baseline agent** | Deterministic optimal pathing, a concrete benchmark, not a vibe check. | Harness design, simplicity |
 | **Repeat-action detection via observation injection** | Stuck-loop detection through the normal observation channel, not a separate control path. | Creativity, simplicity |
 | **Rolling 8-turn message history** | Bounded context cost. The history *is* the memory. | Harness design, simplicity |
 | **`ACTION:` structured output token** | One token, reliable regex parse, no JSON overhead. Never fails silently. | Simplicity |
@@ -68,7 +68,7 @@ python run.py --fog --fog-radius 2    # partial observability
 
 ## Observation Representation
 
-The observation the LLM receives at each step is the highest-leverage surface in the system. Getting it wrong — too sparse, too verbose, wrong format — causes more task failures than any prompt engineering issue.
+The observation the LLM receives at each step is the highest-leverage surface in the system. Getting it wrong; too sparse, too verbose, wrong format, causes more task failures than any prompt engineering issue.
 
 Two representations are generated and concatenated every step:
 
@@ -214,7 +214,7 @@ Full JSON logs saved to `logs/run_log.json`.
 ```
 llm-agent-world/
 ├── agent/
-│   ├── llm_agent.py      # LLM harness — prompting, history, action parsing
+│   ├── llm_agent.py      # LLM harness- prompting, history, action parsing
 │   └── bfs_agent.py      # Deterministic BFS baseline agent
 ├── world/
 │   ├── grid.py           # World state, rendering, observation builder
