@@ -30,7 +30,7 @@ python run.py --fog --fog-radius 2    # partial observability
 ┌─────────────────────────────────────────────────────────────────┐
 │                   LLM HARNESS (llm_agent.py)                    │
 │  system prompt  ·  rolling 8-turn history  ·  action parser     │
-│  Claude claude-opus-4-5 (swappable — any provider works)        │
+│  Claude claude-opus-4-5 (swappable: any provider works)        │
 └────────────────────────────┬────────────────────────────────────┘
                              │  ACTION: <token>
                              ▼
@@ -139,7 +139,7 @@ pick_up
 drop <item_name>
 wait
 
-Actions are validated before application. Invalid moves return a plain-English error that appears in the next observation — no special error-handling logic needed in the harness.
+Actions are validated before application. Invalid moves return a plain-English error that appears in the next observation, no special error-handling logic needed in the harness.
 
 ---
 
