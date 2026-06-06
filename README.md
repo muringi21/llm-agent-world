@@ -236,7 +236,7 @@ Known item locations:
 Goal zone locations:
   deliver_key: col 6, row 1
 
-[Claude thinking]
+[Claude reasoning]
 I'm at (1,1) with nothing in my inventory. The key is at (5,5) and
 the goal is at (6,1). I need to go south and east to reach the key,
 but there's a wall segment at column 3 rows 2-5 blocking the direct path.
