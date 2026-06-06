@@ -5,6 +5,7 @@ Usage:
     python run.py                             # default: delivery scenario, LLM agent
     python run.py --scenario multi            # multi-item delivery
     python run.py --max-steps 40              # override step limit
+    python run.py --scenario maze             # corridor maze navigation
     python run.py --no-verbose                # suppress Claude's reasoning
     python run.py --log run_log.json          # save full log to file
     python run.py --fog                       # enable fog of war (default radius 4)
@@ -36,11 +37,16 @@ SCENARIO_GOALS = {
         "Pick up both the GEM (*) and the CRYSTAL (C) and deliver them "
         "to the GOAL zone (G) to complete the task."
     ),
+    "maze": (
+        "Navigate through the maze of corridors and reach the BEACON (G) "
+        "in the bottom-right area. There is no item to collect — just find your way through."
+    ),
 }
 
 SCENARIO_COMPLETION = {
     "delivery": lambda state: "deliver_key" in state.completed_goals,
     "multi": lambda state: "deliver_gem_and_crystal" in state.completed_goals,
+    "maze": lambda state: "reach_beacon" in state.completed_goals,
 }
 
 
@@ -183,7 +189,7 @@ def run_comparison(scenario: str, max_steps: int, verbose: bool):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the LLM agent in a virtual world.")
-    parser.add_argument("--scenario", choices=["delivery", "multi"], default="delivery")
+    parser.add_argument("--scenario", choices=["delivery", "multi", "maze"], default="delivery")    
     parser.add_argument("--max-steps", type=int, default=30)
     parser.add_argument("--no-verbose", action="store_true", help="Suppress Claude's reasoning output")
     parser.add_argument("--log", type=str, default="logs/run_log.json", help="Path to save JSON log")

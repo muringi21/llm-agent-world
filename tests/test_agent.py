@@ -16,7 +16,7 @@ from world.grid import (
     DEFAULT_FOG_RADIUS,
 )
 from world.actions import apply_action
-from agent.llm_agent import _parse_action, _obs_to_text, REPEAT_THRESHOLD, RECENT_ACTIONS_WINDOW
+from agent.llm_agent import _parse_action, _obs_to_text, REPEAT_THRESHOLD, RECENT_ACTIONS_WINDOW, _build_system_prompt
 from agent.bfs_agent import BFSAgent
 
 
@@ -427,3 +427,70 @@ class TestRepeatActionDetection:
         grid_str = render_grid(state)
         result = _obs_to_text(obs, grid_str, repeat_warning=None)
         assert "SYSTEM WARNING" not in result
+
+
+# ---------------------------------------------------------------------------
+# Feature 4: XML reasoning format tests
+# ---------------------------------------------------------------------------
+
+class TestXMLReasoningFormat:
+    def test_system_prompt_requests_reasoning_tags(self):
+        """System prompt must instruct the agent to use <reasoning> XML tags."""
+        prompt = _build_system_prompt("Pick up the key and deliver it.")
+        assert "<reasoning>" in prompt
+
+    def test_parse_action_with_xml_reasoning_block(self):
+        """Parser correctly extracts ACTION after a <reasoning> block."""
+        text = (
+            "<reasoning>\n"
+            "The key is to my south-east. Moving east closes the gap.\n"
+            "</reasoning>\n"
+            "ACTION: move_east"
+        )
+        assert _parse_action(text) == "move_east"
+
+    def test_parse_action_ignores_action_inside_reasoning(self):
+        """Parser takes the LAST ACTION: line, not one embedded in reasoning text."""
+        text = (
+            "<reasoning>\n"
+            "I could do ACTION: move_north but east is better.\n"
+            "</reasoning>\n"
+            "ACTION: move_east"
+        )
+        assert _parse_action(text) == "move_east"
+
+
+# ---------------------------------------------------------------------------
+# Feature 5: Maze scenario tests
+# ---------------------------------------------------------------------------
+
+class TestMazeScenario:
+    def test_maze_world_builds(self):
+        """Maze scenario builds without error and has expected dimensions."""
+        state = build_world("maze")
+        assert state.width == 12
+        assert state.height == 10
+        assert state.agent_pos == (1, 1)
+
+    def test_maze_has_beacon_goal(self):
+        """Maze scenario has exactly one goal: reach_beacon."""
+        state = build_world("maze")
+        assert "reach_beacon" in state.goals.values()
+
+    def test_maze_has_no_items(self):
+        """Maze scenario has no items to pick up — navigation only."""
+        state = build_world("maze")
+        assert len(state.items) == 0
+
+    def test_bfs_solves_maze(self):
+        """BFSAgent can solve the maze scenario deterministically."""
+        state = build_world("maze")
+        agent = BFSAgent()
+        done = False
+        for _ in range(100):
+            action = agent.choose_action(state)
+            state, _ = apply_action(state, action)
+            if "reach_beacon" in state.completed_goals:
+                done = True
+                break
+        assert done, "BFSAgent should be able to solve the maze scenario"

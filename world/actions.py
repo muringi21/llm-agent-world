@@ -71,7 +71,11 @@ def _move(state: WorldState, dc: int, dr: int, direction: str) -> ActionResult:
         item = state.items[(nc, nr)]
         msg += f" You see a {item.name} here."
     if (nc, nr) in state.goals:
+        goal_name = state.goals[(nc, nr)]
         msg += f" You are at the goal zone."
+        if goal_name.startswith("reach_") and goal_name not in state.completed_goals:
+            state.completed_goals.append(goal_name)
+            msg += f" Goal '{goal_name}' completed!"
 
     state.history.append((f"move_{direction}", msg))
     return state, msg

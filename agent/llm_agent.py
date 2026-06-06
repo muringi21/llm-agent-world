@@ -131,8 +131,16 @@ Rules:
 - Think step by step. Plan a path to the item, then to the goal.
 
 Response format:
-Respond with your reasoning first (a few sentences), then end your message with:
+Wrap your reasoning in <reasoning>...</reasoning> tags, then end with:
+
 ACTION: <your chosen action>
+
+Example:
+<reasoning>
+The key is to my south-east. I can move east freely — no wall blocking.
+Heading east closes the distance faster than south from here.
+</reasoning>
+ACTION: move_east
 
 The ACTION line must be the very last line of your response.
 Example: ACTION: move_east
@@ -188,7 +196,7 @@ class LLMAgent:
         self.messages.append({"role": "assistant", "content": raw_text})
 
         if self.verbose:
-            print(f"\n[Claude thinking]\n{raw_text}\n")
+            print(f"\n[Claude reasoning]\n{raw_text}\n")
 
         action = _parse_action(raw_text)
 

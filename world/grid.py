@@ -106,6 +106,32 @@ def build_world(scenario: str = "delivery") -> WorldState:
         state.items[(7, 2)] = Item(name="crystal", symbol="C")
         state.goals[(8, 8)] = "deliver_gem_and_crystal"
         return state
+        
+    elif scenario == "maze":
+        # 12x10 corridor maze. Agent must reach the beacon (goal) by navigating
+        # through a series of corridors and dead-ends.
+        state = WorldState(width=12, height=10)
+        # Outer walls
+        for c in range(12):
+            state.walls.add((c, 0))
+            state.walls.add((c, 9))
+        for r in range(10):
+            state.walls.add((0, r))
+            state.walls.add((11, r))
+        # Horizontal dividers — creating three corridors
+        for c in range(1, 9):
+            state.walls.add((c, 3))
+        state.walls.discard((4, 3))  # gap: connects corridor 1 -> 2
+        for c in range(3, 11):
+            state.walls.add((c, 6))
+        state.walls.discard((8, 6))  # gap: connects corridor 2 -> 3
+        # Dead-end nub on the left of corridor 2
+        for r in range(4, 6):
+            state.walls.add((2, r))
+        state.agent_pos = (1, 1)
+        # No item to pick up — just reach the beacon
+        state.goals[(10, 8)] = "reach_beacon"
+        return state
 
     else:
         raise ValueError(f"Unknown scenario: {scenario}")

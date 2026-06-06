@@ -80,6 +80,18 @@ class BFSAgent:
             # If no path found, wait (shouldn't normally happen in valid maps)
             return ["wait"]
 
+        # 4. Navigation-only goals (e.g. reach_beacon) — no item required
+        #    Navigate directly to the goal zone.
+        remaining_goals = [
+            pos for pos, name in state.goals.items()
+            if name not in state.completed_goals
+        ]
+        if remaining_goals:
+            goal_pos = remaining_goals[0]
+            path = self._bfs(state, (ac, ar), goal_pos)
+            if path is not None:
+                return path
+
         # Nothing left to do
         return ["wait"]
 
