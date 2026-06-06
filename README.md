@@ -1,3 +1,7 @@
+
+
+https://github.com/user-attachments/assets/306130d2-5196-45d8-8177-7a481de390b0
+
 ![CI](https://github.com/muringi21/llm-agent-world/actions/workflows/ci.yml/badge.svg)
 
 # LLM Agent in a Virtual World
