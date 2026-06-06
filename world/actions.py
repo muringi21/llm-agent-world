@@ -11,12 +11,11 @@ Each action returns (new_state, result_message).
 """
 
 from __future__ import annotations
-from typing import Tuple
 from world.grid import WorldState, Item, DIRECTIONS
 import copy
 
 
-ActionResult = Tuple[WorldState, str]
+ActionResult = tuple[WorldState, str]
 
 
 def apply_action(state: WorldState, action: str) -> ActionResult:

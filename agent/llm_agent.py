@@ -40,7 +40,7 @@ RECENT_ACTIONS_WINDOW = 5
 REPEAT_THRESHOLD = 3   # warn after this many consecutive identical actions
 
 
-def _obs_to_text(obs: dict, grid_str: str, repeat_warning: str = None) -> str:
+def _obs_to_text(obs: dict, grid_str: str, repeat_warning: str | None = None) -> str:
     """Convert structured observation dict to clear natural language.
 
     Parameters
@@ -140,7 +140,6 @@ Example: ACTION: move_east
 
 
 class LLMAgent:
-    FOG_MODE = False  # class-level default
 
     def __init__(self, scenario_goal: str, verbose: bool = True, fog_radius: int = None):
         api_key = os.environ.get("ANTHROPIC_API_KEY")

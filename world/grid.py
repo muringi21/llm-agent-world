@@ -23,7 +23,7 @@ TILE_AGENT = "A"
 TILE_GOAL  = "G"
 TILE_FOG   = "?"
 
-FOG_RADIUS = 4  # cells the agent can see around itself (Manhattan distance)
+DEFAULT_FOG_RADIUS = 4  # cells the agent can see around itself (Manhattan distance)
 
 DIRECTIONS = {
     "north": (0, -1),
@@ -43,19 +43,18 @@ class Item:
 class WorldState:
     width: int
     height: int
-    walls: set = field(default_factory=set)          # {(col, row), ...}
-    items: dict = field(default_factory=dict)         # (col, row) -> Item
-    goals: dict = field(default_factory=dict)         # (col, row) -> goal_name
-    agent_pos: tuple = (1, 1)
-    agent_inventory: list = field(default_factory=list)
+    walls: set[tuple[int, int]] = field(default_factory=set)
+    items: dict[tuple[int, int], Item] = field(default_factory=dict)
+    goals: dict[tuple[int, int], str] = field(default_factory=dict)
+    agent_pos: tuple[int, int] = (1, 1)
+    agent_inventory: list[str] = field(default_factory=list)
     steps: int = 0
-    completed_goals: list = field(default_factory=list)
-    history: list = field(default_factory=list)       # list of (action, result) tuples
+    completed_goals: list[str] = field(default_factory=list)
+    history: list[tuple[str, str]] = field(default_factory=list)
 
     def clone(self) -> "WorldState":
         """Return a deep copy of this state (safe for logging/replay without mutation)."""
-        s = copy.deepcopy(self)
-        return s
+        return copy.deepcopy(self)
 
 
 def build_world(scenario: str = "delivery") -> WorldState:

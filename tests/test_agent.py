@@ -13,7 +13,7 @@ from world.grid import (
     get_visible_cells,
     WorldState,
     Item,
-    FOG_RADIUS,
+    DEFAULT_FOG_RADIUS,
 )
 from world.actions import apply_action
 from agent.llm_agent import _parse_action, _obs_to_text, REPEAT_THRESHOLD, RECENT_ACTIONS_WINDOW
@@ -207,7 +207,7 @@ class TestFogOfWar:
         assert (2, 5) not in visible
 
     def test_item_outside_radius_not_in_known_items(self):
-        """Items beyond fog_radius should NOT appear in known_items."""
+        """Items beyond DEFAULT_FOG_RADIUS should NOT appear in known_items."""
         state = self._make_state_with_distant_item()
         # Agent at (1,1), item at (7,7): Manhattan distance = 12, radius = 4
         obs = get_observation(state, fog_radius=4)
@@ -216,7 +216,7 @@ class TestFogOfWar:
         )
 
     def test_item_inside_radius_in_known_items(self):
-        """Items within fog_radius SHOULD appear in known_items."""
+        """Items within DEFAULT_FOG_RADIUS SHOULD appear in known_items."""
         state = WorldState(width=10, height=10)
         # Minimal walls
         for c in range(10):
@@ -242,7 +242,7 @@ class TestFogOfWar:
         """Without fog, observation dict has no fog_of_war key (or it's falsy)."""
         state = build_world("delivery")
         obs = get_observation(state)
-        assert not obs.get("fog_of_war"), "fog_of_war should not be set without fog_radius"
+        assert not obs.get("fog_of_war"), "fog_of_war should not be set without DEFAULT_FOG_RADIUS"
 
     def test_discovered_accumulates_across_steps(self):
         """discovered dict grows as agent moves and sees new items."""

@@ -30,7 +30,7 @@ python run.py --fog --fog-radius 2    # partial observability
 ┌─────────────────────────────────────────────────────────────────┐
 │                   LLM HARNESS (llm_agent.py)                    │
 │  system prompt  ·  rolling 8-turn history  ·  action parser     │
-│  Claude claude-opus-4-5 (swappable: any provider works)        │
+│  Claude claude-opus-4-5 (swappable: any OpenAI-compatible │provider)                                                        │
 └────────────────────────────┬────────────────────────────────────┘
                              │  ACTION: <token>
                              ▼
@@ -48,7 +48,7 @@ python run.py --fog --fog-radius 2    # partial observability
 
 **BFS baseline** provides a deterministic lower bound on step count for any scenario, useful for scoring LLM efficiency without needing to run multiple API calls.
 
-**Repeat-action detection** watches the last N actions in `WorldState.action_history`. If the agent is oscillating (A→B→A→B), a plain-English nudge is injected into the next observation: *"You have taken this action repeatedly without progress; consider a different approach."* No reward shaping, no hidden state; just honest feedback in the observation channel.
+**Repeat-action detection** watches the last N actions in `LLMAgent.recent_actions`. If the agent is oscillating (A→B→A→B), a plain-English nudge is injected into the next observation: *"You have taken this action repeatedly without progress; consider a different approach."* No reward shaping, no hidden state; just honest feedback in the observation channel.
 
 ---
 

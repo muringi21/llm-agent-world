@@ -17,7 +17,7 @@ import argparse
 import json
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -113,7 +113,7 @@ def run(
         "final_inventory": state.agent_inventory,
         "completed_goals": state.completed_goals,
         "final_grid": render_grid(state),
-        "run_at": datetime.utcnow().isoformat(),
+        "run_at": datetime.now(timezone.utc).isoformat(),
         "steps": log_entries,
     }
 
