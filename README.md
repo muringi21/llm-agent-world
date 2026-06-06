@@ -171,6 +171,7 @@ python run.py --log logs/my_run.json
 ---
 
 ## Example Output
+```
 === Step 1 ===
 Position: column 1, row 1
 Inventory: nothing
@@ -204,12 +205,13 @@ ACTION: move_east
 --- Step 14 ---
 [Agent drops key at goal (6,1)]
 ✓ GOAL ACHIEVED in 12 steps!
-
+```
 Full JSON logs saved to `logs/run_log.json`.
 
 ---
 
 ## Project Structure
+```
 llm-agent-world/
 ├── agent/
 │   ├── llm_agent.py      # LLM harness — prompting, history, action parsing
@@ -225,7 +227,7 @@ llm-agent-world/
 ├── run.py                # Entry point and scenario runner
 ├── requirements.txt
 └── .env.example
-
+```
 ---
 
 ## Testing
