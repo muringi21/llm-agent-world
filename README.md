@@ -41,7 +41,8 @@ python run.py --fog --fog-radius 2    # partial observability
                              │  updated WorldState
                              ▼
                         WORLD (loop)
-                      
+
+```                  
 
 **Fog-of-war** masks tiles outside a configurable Manhattan-distance radius; a distance hint to the nearest item replaces full positional knowledge, forcing the LLM to explore rather than teleport to the answer.
 
@@ -147,7 +148,7 @@ Actions are validated before application. Invalid moves return a plain-English e
 
 ```bash
 pip install -r requirements.txt
-```
+
 
 ### 2. Set your API key
 
