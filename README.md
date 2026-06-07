@@ -15,7 +15,14 @@ python run.py --scenario maze         # corridor maze — pure navigation
 python run.py --agent bfs             # deterministic BFS baseline
 python run.py --fog --fog-radius 2    # partial observability
 ```
-
+> **Why this maps to real robotics:** A physical robot never has full world knowledge —
+> sensors have range limits, occlusion is constant, and latency means state is always
+> slightly stale. The design choices here (partial observability via fog-of-war,
+> a deterministic BFS baseline for benchmarking, structured `ACTION:` output tokens,
+> and inspectable `<reasoning>` blocks) directly mirror constraints in real robot
+> software stacks: bounded perception, reproducible evaluation, parseable LLM outputs,
+> and auditable decision traces. The harness is intentionally thin so those properties
+> are visible — not hidden inside a framework.
 ---
 
 ## Architecture
