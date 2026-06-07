@@ -15,7 +15,7 @@ python run.py --scenario maze         # corridor maze — pure navigation
 python run.py --agent bfs             # deterministic BFS baseline
 python run.py --fog --fog-radius 2    # partial observability
 ```
-> **Why this maps to real robotics:** A physical robot never has full world knowledge:
+> **Why this maps to real robotics:** A physical robot never has full world knowledge-
 > sensors have range limits, occlusion is constant, and latency means state is always
 > slightly stale. The design choices here (partial observability via fog-of-war,
 > a deterministic BFS baseline for benchmarking, structured `ACTION:` output tokens,
